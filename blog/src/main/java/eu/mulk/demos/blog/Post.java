@@ -26,6 +26,15 @@ public class Post extends PanacheEntity {
   @ManyToMany(fetch = FetchType.LAZY)
   public List<Category> categories;
 
-  @OneToMany(fetch = FetchType.LAZY)
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
   public List<Comment> comments;
+
+  public static Post create(Author author, String title) {
+    var p = new Post();
+    p.title = title;
+    p.publicationDate = Instant.now();
+    p.body = "";
+    p.author = author;
+    return p;
+  }
 }

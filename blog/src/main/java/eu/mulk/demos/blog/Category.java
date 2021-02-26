@@ -7,4 +7,10 @@ import javax.persistence.Entity;
 public class Category extends PanacheEntity {
 
   public String name;
+
+  public static Category create(String name) {
+    var c = new Category();
+    c.name = name;
+    return c;
+  }
 }

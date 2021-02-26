@@ -7,4 +7,10 @@ import javax.persistence.Entity;
 public class Author extends PanacheEntity {
 
   public String name;
+
+  public static Author create(String name) {
+    var a = new Author();
+    a.name = name;
+    return a;
+  }
 }
