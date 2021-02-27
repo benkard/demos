@@ -11,12 +11,112 @@ Matthias Andreas Benkard
 :keywords: mulk
 // Settings
 :icons: font
+:revealjs_theme: simple
+:revealjs_width: 1280
+:revealjs_height: 800
+//:revealjs_width: 1920
+//:revealjs_height: 1200
+//:revealjs_customtheme: SLIDES.css
+:customcss: SLIDES.css
 :source-highlighter: rouge
+//:source-highlighter: highlightjs
 
+
+== Setting the Stage
+
+image:UML.png[]
+
+[.columns]
+=== Posts
+
+[.column]
+--
+[source,java]
+----
+@Entity
+public class Post extends PanacheEntity {
+
+  public String title;
+  public Instant publicationDate;
+  public String body;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  public Author author;
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  public Set<Category> categories;
+
+  @OneToMany(fetch = FetchType.LAZY,
+             mappedBy = "post")
+  public Set<Comment> comments;
+}
+----
+--
+
+[.column]
+--
+[source,java]
+----
+@Entity
+public class Comment extends PanacheEntity {
+
+  public String authorName;
+  public Instant publicationDate;
+  public String text;
+
+  @Enumerated(EnumType.STRING)
+  public SpamStatus spamStatus;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  public Post post;
+}
+----
+
+[source,java]
+----
+@Entity
+public class Category extends PanacheEntity {
+
+  public String name;
+}
+----
+--
+
+[.stretch]
+=== Authors, Login Credentials
+
+[source,java]
+----
+@Entity
+public class Author extends PanacheEntity {
+
+  public String name;
+
+  @OneToOne(fetch = FetchType.LAZY,
+            mappedBy = "author")
+  @LazyToOne(LazyToOneOption.NO_PROXY)
+  public BasicCredentials basicCredentials;
+}
+----
+
+[source,java]
+----
+@Entity
+public class BasicCredentials extends PanacheEntity {
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @MapsId
+  public Author author;
+
+  public String username;
+  public String password;
+}
+----
+
+== Cartesian Blowup
 
 [source,sql]
 ----
-Hibernate: 
     select
         post0_.id as id1_4_0_,
         comments1_.id as id1_3_1_,
