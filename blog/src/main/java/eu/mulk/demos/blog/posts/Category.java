@@ -1,4 +1,4 @@
-package eu.mulk.demos.blog;
+package eu.mulk.demos.blog.posts;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import javax.persistence.Entity;

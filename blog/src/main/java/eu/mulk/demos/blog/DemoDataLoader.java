@@ -1,7 +1,12 @@
 package eu.mulk.demos.blog;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
+import eu.mulk.demos.blog.authors.Author;
+import eu.mulk.demos.blog.comments.Comment;
+import eu.mulk.demos.blog.posts.Category;
+import eu.mulk.demos.blog.posts.Post;
 import io.quarkus.runtime.StartupEvent;
 import java.util.stream.Stream;
 import javax.enterprise.context.ApplicationScoped;
@@ -47,7 +52,7 @@ public class DemoDataLoader {
       post.comments =
           nat(COMMENT_COUNT)
               .map(x -> Comment.create(post, "Anonymous Coward", "First post"))
-              .collect(toList());
+              .collect(toSet());
       post.comments.forEach(em::persist);
     }
 
@@ -55,7 +60,7 @@ public class DemoDataLoader {
     var categories =
         nat(CATEGORY_COUNT)
             .map(x -> Category.create("Category #%d".formatted(x)))
-            .collect(toList());
+            .collect(toSet());
     categories.forEach(em::persist);
     for (var post : posts) {
       post.categories = categories;

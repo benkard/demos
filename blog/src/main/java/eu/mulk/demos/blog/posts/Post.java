@@ -1,8 +1,11 @@
-package eu.mulk.demos.blog;
+package eu.mulk.demos.blog.posts;
 
+import eu.mulk.demos.blog.authors.Author;
+import eu.mulk.demos.blog.comments.Comment;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import java.time.Instant;
-import java.util.List;
+import java.util.Set;
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -21,13 +24,16 @@ public class Post extends PanacheEntity {
   public String body;
 
   @ManyToOne(fetch = FetchType.LAZY)
+  @JsonbTransient
   public Author author;
 
   @ManyToMany(fetch = FetchType.LAZY)
-  public List<Category> categories;
+  @JsonbTransient
+  public Set<Category> categories;
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
-  public List<Comment> comments;
+  @JsonbTransient
+  public Set<Comment> comments;
 
   public static Post create(Author author, String title) {
     var p = new Post();

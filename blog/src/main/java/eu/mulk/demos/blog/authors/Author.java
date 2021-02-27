@@ -1,6 +1,7 @@
-package eu.mulk.demos.blog;
+package eu.mulk.demos.blog.authors;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToOne;
@@ -14,6 +15,7 @@ public class Author extends PanacheEntity {
 
   @OneToOne(fetch = FetchType.LAZY, mappedBy = "author")
   @LazyToOne(LazyToOneOption.NO_PROXY)
+  @JsonbTransient
   public BasicCredentials basicCredentials;
 
   public static Author create(String name) {

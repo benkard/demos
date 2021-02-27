@@ -1,0 +1,122 @@
+= Highly Efficient Enterprise Data Access
+Matthias Andreas Benkard
+// Meta
+:experimental:
+:data-uri:
+:sectnums:
+:toc:
+:stem:
+:toclevels: 2
+:description: Slides for my Hibernate Patterns and Antipatterns talk
+:keywords: mulk
+// Settings
+:icons: font
+:source-highlighter: rouge
+
+
+[source,sql]
+----
+Hibernate: 
+    select
+        post0_.id as id1_4_0_,
+        comments1_.id as id1_3_1_,
+        category3_.id as id1_2_2_,
+        post0_.author_id as author_i5_4_0_,
+        post0_.body as body2_4_0_,
+        post0_.publication_date as publicat3_4_0_,
+        post0_.title as title4_4_0_,
+        comments1_.author_name as author_n2_3_1_,
+        comments1_.post_id as post_id6_3_1_,
+        comments1_.publication_date as publicat3_3_1_,
+        comments1_.spam_status as spam_sta4_3_1_,
+        comments1_.text as text5_3_1_,
+        comments1_.post_id as post_id6_3_0__,
+        comments1_.id as id1_3_0__,
+        category3_.name as name2_2_2_,
+        categories2_.post_id as post_id1_5_1__,
+        categories2_.categories_id as categori2_5_1__ 
+    from
+        post post0_ 
+    left outer join
+        comment comments1_ 
+            on post0_.id=comments1_.post_id 
+    left outer join
+        post_category categories2_ 
+            on post0_.id=categories2_.post_id 
+    left outer join
+        category category3_ 
+            on categories2_.categories_id=category3_.id;
+----
+
+[source]
+----
+[2021-02-27 10:32:58] 60 rows retrieved starting from 1 in 263 ms (execution: 12 ms, fetching: 251 ms)
+
+; 60 = #posts (10) x #comments/post (3) x #categories (2)
+; cartesian explosion!
+----
+
+[source,sql]
+----
+post_id	com_id	cat_id	aut_id	body	pubdate	title			author_name			postid2	com_pubdate			spamp	com_text	postid3	com_id	cat_name	postid4	cat_id
+4	16	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133969	UNKNOWN	First post	4	16	Category #1	4	44
+4	15	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133963	UNKNOWN	First post	4	15	Category #1	4	44
+4	14	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133870	UNKNOWN	First post	4	14	Category #1	4	44
+4	16	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133969	UNKNOWN	First post	4	16	Category #0	4	45
+4	15	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133963	UNKNOWN	First post	4	15	Category #0	4	45
+4	14	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133870	UNKNOWN	First post	4	14	Category #0	4	45
+5	19	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135200	UNKNOWN	First post	5	19	Category #1	5	44
+5	18	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135192	UNKNOWN	First post	5	18	Category #1	5	44
+5	17	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135205	UNKNOWN	First post	5	17	Category #1	5	44
+5	19	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135200	UNKNOWN	First post	5	19	Category #0	5	45
+5	18	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135192	UNKNOWN	First post	5	18	Category #0	5	45
+5	17	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135205	UNKNOWN	First post	5	17	Category #0	5	45
+6	22	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136043	UNKNOWN	First post	6	22	Category #1	6	44
+6	21	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136038	UNKNOWN	First post	6	21	Category #1	6	44
+6	20	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136031	UNKNOWN	First post	6	20	Category #1	6	44
+6	22	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136043	UNKNOWN	First post	6	22	Category #0	6	45
+6	21	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136038	UNKNOWN	First post	6	21	Category #0	6	45
+6	20	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136031	UNKNOWN	First post	6	20	Category #0	6	45
+7	25	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136904	UNKNOWN	First post	7	25	Category #1	7	44
+7	24	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136897	UNKNOWN	First post	7	24	Category #1	7	44
+7	23	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136909	UNKNOWN	First post	7	23	Category #1	7	44
+7	25	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136904	UNKNOWN	First post	7	25	Category #0	7	45
+7	24	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136897	UNKNOWN	First post	7	24	Category #0	7	45
+7	23	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136909	UNKNOWN	First post	7	23	Category #0	7	45
+8	28	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137743	UNKNOWN	First post	8	28	Category #1	8	44
+8	27	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137739	UNKNOWN	First post	8	27	Category #1	8	44
+8	26	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137731	UNKNOWN	First post	8	26	Category #1	8	44
+8	28	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137743	UNKNOWN	First post	8	28	Category #0	8	45
+8	27	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137739	UNKNOWN	First post	8	27	Category #0	8	45
+8	26	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137731	UNKNOWN	First post	8	26	Category #0	8	45
+9	31	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138536	UNKNOWN	First post	9	31	Category #1	9	44
+9	30	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138548	UNKNOWN	First post	9	30	Category #1	9	44
+9	29	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138543	UNKNOWN	First post	9	29	Category #1	9	44
+9	31	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138536	UNKNOWN	First post	9	31	Category #0	9	45
+9	30	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138548	UNKNOWN	First post	9	30	Category #0	9	45
+9	29	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138543	UNKNOWN	First post	9	29	Category #0	9	45
+10	34	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139349	UNKNOWN	First post	10	34	Category #1	10	44
+10	33	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139354	UNKNOWN	First post	10	33	Category #1	10	44
+10	32	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139337	UNKNOWN	First post	10	32	Category #1	10	44
+10	34	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139349	UNKNOWN	First post	10	34	Category #0	10	45
+10	33	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139354	UNKNOWN	First post	10	33	Category #0	10	45
+10	32	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139337	UNKNOWN	First post	10	32	Category #0	10	45
+11	37	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140032	UNKNOWN	First post	11	37	Category #1	11	44
+11	36	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140025	UNKNOWN	First post	11	36	Category #1	11	44
+11	35	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140037	UNKNOWN	First post	11	35	Category #1	11	44
+11	37	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140032	UNKNOWN	First post	11	37	Category #0	11	45
+11	36	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140025	UNKNOWN	First post	11	36	Category #0	11	45
+11	35	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140037	UNKNOWN	First post	11	35	Category #0	11	45
+12	40	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140766	UNKNOWN	First post	12	40	Category #1	12	44
+12	39	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140786	UNKNOWN	First post	12	39	Category #1	12	44
+12	38	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140779	UNKNOWN	First post	12	38	Category #1	12	44
+12	40	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140766	UNKNOWN	First post	12	40	Category #0	12	45
+12	39	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140786	UNKNOWN	First post	12	39	Category #0	12	45
+12	38	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140779	UNKNOWN	First post	12	38	Category #0	12	45
+13	43	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141651	UNKNOWN	First post	13	43	Category #1	13	44
+13	42	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141655	UNKNOWN	First post	13	42	Category #1	13	44
+13	41	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141642	UNKNOWN	First post	13	41	Category #1	13	44
+13	43	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141651	UNKNOWN	First post	13	43	Category #0	13	45
+13	42	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141655	UNKNOWN	First post	13	42	Category #0	13	45
+13	41	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141642	UNKNOWN	First post	13	41	Category #0	13	45
+----
