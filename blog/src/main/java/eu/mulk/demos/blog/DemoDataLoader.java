@@ -13,6 +13,7 @@ import javax.transaction.Transactional;
 @ApplicationScoped
 public class DemoDataLoader {
 
+  static final int AUTHOR_COUNT = 3;
   static final int POST_COUNT = 10;
   static final int COMMENT_COUNT = 3;
   static final int CATEGORY_COUNT = 2;
@@ -28,25 +29,32 @@ public class DemoDataLoader {
     }
 
     // Authors
-    var mb = Author.create("Matthias Benkard");
-    em.persist(mb);
+    var authors =
+        nat(AUTHOR_COUNT)
+            .map(x -> Author.create("Author #%d".formatted(x)))
+            .collect(toList());
+    authors.forEach(em::persist);
 
     // Posts
     var posts =
-        nat(POST_COUNT).map(x -> Post.create(mb, "Post #%d".formatted(x))).collect(toList());
+        nat(POST_COUNT)
+            .map(x -> Post.create(authors.get(x % AUTHOR_COUNT), "Post #%d".formatted(x)))
+            .collect(toList());
     posts.forEach(em::persist);
 
     // Comments
     for (var post : posts) {
       post.comments =
           nat(COMMENT_COUNT)
-              .map(x -> Comment.create(post, "Anonymous Coward", "First post")).collect(toList());
+              .map(x -> Comment.create(post, "Anonymous Coward", "First post"))
+              .collect(toList());
       post.comments.forEach(em::persist);
     }
 
     // Categories
     var categories =
-        nat(CATEGORY_COUNT).map(x -> Category.create("Category #%d".formatted(x)))
+        nat(CATEGORY_COUNT)
+            .map(x -> Category.create("Category #%d".formatted(x)))
             .collect(toList());
     categories.forEach(em::persist);
     for (var post : posts) {
