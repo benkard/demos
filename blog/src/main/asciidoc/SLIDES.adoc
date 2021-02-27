@@ -3,7 +3,6 @@ Matthias Andreas Benkard
 // Meta
 :experimental:
 :data-uri:
-:sectnums:
 :toc:
 :stem:
 :toclevels: 2
@@ -18,20 +17,27 @@ Matthias Andreas Benkard
 //:revealjs_height: 1200
 //:revealjs_customtheme: SLIDES.css
 :customcss: SLIDES.css
-:source-highlighter: rouge
-//:source-highlighter: highlightjs
+//:source-highlighter: rouge
+:source-highlighter: highlightjs
+//:highlightjs-theme: https://cdn.jsdelivr.net/npm/reveal.js@3.9.2/lib/css/zenburn.css
+//:highlightjs-theme: https://cdn.jsdelivr.net/npm/reveal.js@3.9.2/lib/css/monokai.css
+//:highlightjs-theme: tomorrow.css
+:highlightjs-theme: grayscale.css
+:stem:
 
 
+[%notitle]
 == Setting the Stage
 
 image:UML.png[]
 
+[%notitle]
 [.columns]
 === Posts
 
+[source,java,data-lines=]
 [.column]
---
-[source,java]
+[.is-two-thirds]
 ----
 @Entity
 public class Post extends PanacheEntity {
@@ -40,21 +46,27 @@ public class Post extends PanacheEntity {
   public Instant publicationDate;
   public String body;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)         //<1>
   public Author author;
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  public Set<Category> categories;
+  @ManyToMany(fetch = FetchType.LAZY)        //<2>
+  public Collection<Category> categories;
 
   @OneToMany(fetch = FetchType.LAZY,
-             mappedBy = "post")
-  public Set<Comment> comments;
+             mappedBy = "post")              //<3>
+  public Collection<Comment> comments;
 }
 ----
---
 
 [.column]
---
+<1> lazy is good (can always `JOIN FETCH` later)
+<2> `@ManyToMany` always implies a join table
+<3> mapping without a join table, non-owning side
+
+
+[%notitle]
+=== Comments and Categories
+
 [source,java]
 ----
 @Entity
@@ -80,9 +92,9 @@ public class Category extends PanacheEntity {
   public String name;
 }
 ----
---
 
-[.stretch]
+
+[%notitle]
 === Authors, Login Credentials
 
 [source,java]
@@ -92,7 +104,7 @@ public class Author extends PanacheEntity {
 
   public String name;
 
-  @OneToOne(fetch = FetchType.LAZY,
+  @OneToOne(fetch = FetchType.LAZY,        //<1>
             mappedBy = "author")
   @LazyToOne(LazyToOneOption.NO_PROXY)
   public BasicCredentials basicCredentials;
@@ -113,52 +125,91 @@ public class BasicCredentials extends PanacheEntity {
 }
 ----
 
+
+[%notitle]
+//[.columns]
 == Cartesian Blowup
 
-[source,sql]
+[source,java]
 ----
-    select
-        post0_.id as id1_4_0_,
-        comments1_.id as id1_3_1_,
-        category3_.id as id1_2_2_,
-        post0_.author_id as author_i5_4_0_,
-        post0_.body as body2_4_0_,
-        post0_.publication_date as publicat3_4_0_,
-        post0_.title as title4_4_0_,
-        comments1_.author_name as author_n2_3_1_,
-        comments1_.post_id as post_id6_3_1_,
-        comments1_.publication_date as publicat3_3_1_,
-        comments1_.spam_status as spam_sta4_3_1_,
-        comments1_.text as text5_3_1_,
-        comments1_.post_id as post_id6_3_0__,
-        comments1_.id as id1_3_0__,
-        category3_.name as name2_2_2_,
-        categories2_.post_id as post_id1_5_1__,
-        categories2_.categories_id as categori2_5_1__ 
-    from
-        post post0_ 
-    left outer join
-        comment comments1_ 
-            on post0_.id=comments1_.post_id 
-    left outer join
-        post_category categories2_ 
-            on post0_.id=categories2_.post_id 
-    left outer join
-        category category3_ 
-            on categories2_.categories_id=category3_.id;
+@Transactional
+public List<Post> getAllWithCommentsAndCategories() {
+
+  return Post.find(
+      """
+      SELECT p FROM Post p
+        LEFT JOIN FETCH p.comments
+        LEFT JOIN FETCH p.categories
+      """)
+      .list();
+}
 ----
 
+[%notitle]
+=== Bad SQL
+
+[source,sql]
+//[.column]
+//[.is-two-thirds]
+----
+select
+    post0_.id,
+    comments1_.id,
+    category3_.id,
+    post0_.author_id,
+    post0_.body,
+    post0_.publication_date,
+    post0_.title,
+    comments1_.author_name,
+    comments1_.post_id,
+    comments1_.publication_date,
+    comments1_.spam_status,
+    comments1_.text,
+    comments1_.post_id,
+    comments1_.id,
+    category3_.name,
+    categories2_.post_id,
+    categories2_.categories_id
+from
+    post post0_ 
+left outer join
+    comment comments1_ 
+        on post0_.id=comments1_.post_id 
+left outer join
+    post_category categories2_ 
+        on post0_.id=categories2_.post_id 
+left outer join
+    category category3_ 
+        on categories2_.categories_id=category3_.id;
+----
+
+//[.column]
+//[.is-one-third]
+
+[%notitle]
+=== Bad Results (1)
+
+--
 [source]
 ----
-[2021-02-27 10:32:58] 60 rows retrieved starting from 1 in 263 ms (execution: 12 ms, fetching: 251 ms)
-
-; 60 = #posts (10) x #comments/post (3) x #categories (2)
-; cartesian explosion!
+[2021-02-27 10:32:58] 60 rows retrieved
 ----
 
-[source,sql]
-----
-post_id	com_id	cat_id	aut_id	body	pubdate	title			author_name			postid2	com_pubdate			spamp	com_text	postid3	com_id	cat_name	postid4	cat_id
+stem:[60 = ubrace|"posts"|_10 *
+ubrace|("comments")/("post")|_3 * ubrace|"categories"|_2]
+
+Cartesian explosion! 🙀
+
+What gives?
+--
+
+[%notitle]
+=== Bad Results (2)
+
+[%header,format=tsv]
+[.supersmall]
+|===
+post_id	com_id	cat_id	aut_id	body	pubdate	title	author_name	postid2	com_pubdate	spamp	com_text	postid3	com_id	cat_name	postid4	cat_id
 4	16	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133969	UNKNOWN	First post	4	16	Category #1	4	44
 4	15	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133963	UNKNOWN	First post	4	15	Category #1	4	44
 4	14	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133870	UNKNOWN	First post	4	14	Category #1	4	44
@@ -219,4 +270,441 @@ post_id	com_id	cat_id	aut_id	body	pubdate	title			author_name			postid2	com_pubd
 13	43	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141651	UNKNOWN	First post	13	43	Category #0	13	45
 13	42	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141655	UNKNOWN	First post	13	42	Category #0	13	45
 13	41	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141642	UNKNOWN	First post	13	41	Category #0	13	45
+|===
+
+
+[%notitle]
+=== Fix: Sequential Fetch Queries
+
+[source,java]
 ----
+@Transactional
+public List<Post> getAllWithCommentsAndCategories2() {
+
+  List<Post> posts = Post.find(
+      """
+      SELECT p FROM Post p
+        LEFT JOIN FETCH p.comments
+      """)
+      .list();
+
+  posts = Post.find(
+      """
+      SELECT DISTINCT p FROM Post p
+        LEFT JOIN FETCH p.categories
+       WHERE p IN (?1)
+      """,
+      posts)
+      .list();
+
+  return posts;
+}
+----
+
+
+[%notitle]
+[.columns]
+=== Good SQL
+
+[source,sql]
+[.column]
+----
+select
+    post0_.id,
+    comments1_.id,
+    post0_.author_id,
+    post0_.body,
+    post0_.publication_date,
+    post0_.title,
+    comments1_.author_name,
+    comments1_.post_id,
+    comments1_.publication_date,
+    comments1_.spam_status,
+    comments1_.text,
+    comments1_.post_id,
+    comments1_.id
+from
+    post post0_
+left outer join
+    comment comments1_
+        on post0_.id=comments1_.post_id
+----
+
+[source,sql]
+[.column]
+----
+select
+    distinct post0_.id,
+    cat2_.id,
+    post0_.author_id,
+    post0_.body,
+    post0_.publication_date,
+    post0_.title,
+    cat2_.name,
+    cats1_.post_id,
+    cats1_.categories_id
+from
+    post post0_
+left outer join
+    post_category cats1_
+        on post0_.id=cats1_.post_id
+left outer join
+    category cat2_
+        on cats1_.categories_id=cat2_.id
+where
+    post0_.id in (
+        ? , ? , ? , ? , ? , ? , ? , ? ,
+        ? , ? , ? , ? , ? , ? , ? , ? ,
+        ? , ? , ? , ? , ? , ? , ? , ? ,
+        ? , ? , ? , ? , ? , ?
+    )
+----
+
+
+[%notitle]
+== Update without `#persist`
+
+[source,java]
+----
+@Transactional
+public void resetCommentStatus() {
+
+  List<Comment> comments = Comment.find(
+      """
+      SELECT c FROM Comment c
+       WHERE c.spamStatus <> 'UNKNOWN'
+      """)
+      .list();
+
+  comments.forEach(c -> c.spamStatus = SpamStatus.UNKNOWN);
+}
+----
+
+
+[%notitle]
+=== Good SQL
+
+[source,sql]
+----
+select
+    comment0_.id,
+    comment0_.author_name,
+    comment0_.post_id,
+    comment0_.publication_date,
+    comment0_.spam_status,
+    comment0_.text
+from
+    comment comment0_
+where
+    comment0_.spam_status<>'UNKNOWN'
+----
+
+[source,sql]
+----
+update
+    comment
+set
+    author_name=?,
+    post_id=?,
+    publication_date=?,
+    spam_status=?,
+    text=?
+where
+    id=?
+
+update
+...
+----
+
+
+[%notitle]
+== First-Level Caching for the Win
+
+[source,java]
+----
+@Transactional
+public void updateCommentStatus() {
+
+  List<Comment> comments = Comment.find(                      //<1>
+      """
+      SELECT c FROM Comment c
+       WHERE c.spamStatus = 'UNKNOWN'
+      """)
+      .list();
+
+  var assessments = spamAssessmentService.assess(comments);   //<2>
+
+  for (var assessment : assessments.entrySet()) {
+    Comment comment = Comment.findById(assessment.getKey());  //<3>
+    comment.spamStatus = assessment.getValue();
+  }
+}
+----
+
+
+[%notitle]
+=== Good SQL
+
+[source,sql]
+----
+select
+    comment0_.id,
+    comment0_.author_name,
+    comment0_.post_id,
+    comment0_.publication_date,
+    comment0_.spam_status,
+    comment0_.text
+from
+    comment comment0_
+where
+    comment0_.spam_status='UNKNOWN'
+----
+
+[source,sql]
+----
+update
+    comment
+set
+    author_name=?,
+    post_id=?,
+    publication_date=?,
+    spam_status=?,
+    text=?
+where
+    id=?
+
+update
+...
+----
+
+[%notitle]
+== `@OneToOne` Surprises
+
+[source,java]
+----
+@Transactional
+public List<Post> getAllWithAuthors() {
+
+  return Post.find(
+      """
+      SELECT p FROM Post p
+        LEFT JOIN FETCH p.author
+      """)
+      .list();
+}
+----
+
+
+[%notitle]
+[.columns]
+=== Bad SQL
+
+[source,sql]
+[.column]
+----
+select
+    post0_.id,
+    author1_.id,
+    post0_.author_id,
+    post0_.body,
+    post0_.publication_date,
+    post0_.title,
+    author1_.name
+from
+    post post0_
+left outer join
+    author author1_
+        on post0_.author_id=author1_.id
+
+select
+    basiccrede0_.author_id,
+    basiccrede0_.password,
+    basiccrede0_.username
+from
+    basic_credentials basiccrede0_
+where
+    basiccrede0_.author_id=?
+----
+
+[source,sql]
+[.column]
+----
+select
+    basiccrede0_.author_id,
+    basiccrede0_.password,
+    basiccrede0_.username
+from
+    basic_credentials basiccrede0_
+where
+    basiccrede0_.author_id=?
+
+select
+    basiccrede0_.author_id,
+    basiccrede0_.password,
+    basiccrede0_.username
+from
+    basic_credentials basiccrede0_
+where
+    basiccrede0_.author_id=?
+----
+
+
+[%notitle]
+=== Another Look at the Author
+
+[source,java]
+----
+@Entity
+public class Author extends PanacheEntity {
+
+  public String name;
+
+  @OneToOne(fetch = FetchType.LAZY,
+            mappedBy = "author")
+  public BasicCredentials basicCredentials;  //<1>
+}
+----
+
+[source,java]
+----
+@Entity
+public class BasicCredentials extends PanacheEntity {
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @MapsId
+  public Author author;                      //<2>
+
+  public String username;
+  public String password;
+}
+----
+
+
+=== Why?
+
+Hibernate has no way of knowing whether `Author#basicCredentials` is `null`!
+
+
+[%notitle]
+[.columns]
+=== Fix: `@LazyToOne(NO_PROXY)`
+
+[source,java,data-line-numbers=8]
+[.column]
+[.is-two-thirds]
+----
+@Entity
+public class Author extends PanacheEntity {
+
+  public String name;
+
+  @OneToOne(fetch = FetchType.LAZY,
+            mappedBy = "author")
+  @LazyToOne(LazyToOneOption.NO_PROXY)  //<1>
+  public BasicCredentials basicCredentials;
+}
+----
+
+[.column]
+<1> `NO_PROXY` + bytecode enhancement = profit
+
+
+[%notitle]
+=== Good SQL
+
+[source,sql]
+----
+select
+    post0_.id,
+    author1_.id,
+    post0_.author_id,
+    post0_.body,
+    post0_.publication_date,
+    post0_.title,
+    author1_.name
+from
+    post post0_
+left outer join
+    author author1_
+        on post0_.author_id=author1_.id
+----
+
+[%notitle]
+== Projection Queries
+
+[source,java]
+----
+@Transactional
+public List<PostSummary> overview() {
+
+  return entityManager.createQuery(
+      """
+      SELECT NEW eu.mulk.demos.blog.posts.PostSummary(
+          p.author.name, p.title, p.publicationDate, size(p.comments))
+        FROM Post p
+      """,
+      PostSummary.class)
+      .getResultList();
+}
+----
+
+
+[%notitle]
+=== Projection DTOs
+
+[source,java]
+----
+public final class PostSummary {
+
+  public final String authorName;
+  public final String title;
+  public final Instant publicationDate;
+  public final int commentCount;
+
+  public PostSummary(                        //<1>
+      String authorName,
+      String title,
+      Instant publicationDate,
+      int commentCount) {
+    this.authorName = authorName;
+    this.title = title;
+    this.publicationDate = publicationDate;
+    this.commentCount = commentCount;
+  }
+}
+----
+
+
+[%notitle]
+=== Good SQL
+
+[source,sql]
+----
+select
+    author1_.name,
+    post0_.title,
+    post0_.publication_date,
+    (select
+        count(comments2_.post_id)
+     from
+        comment comments2_
+     where
+        post0_.id = comments2_.post_id)
+from
+    post post0_
+cross join
+    author author1_
+where
+    post0_.author_id=author1_.id
+----
+
+
+[%notitle]
+== Conclusion
+
+- Lazy is good
+- Lazier is better
+- Lazy with bytecode enhancement is best
+- Sequential queries avoid cartesian blowup
+- The 1st-level cache is your friend
+- Use DTO projections everywhere all the time

@@ -5,7 +5,7 @@
   <nodes>
     <node x="-20.5" y="369.5">Comment#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/comments/Comment.java</node>
     <node x="205.0" y="-8.5">BasicCredentials#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/authors/BasicCredentials.java</node>
-    <node x="-17.5" y="60.5">Post#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Post.java</node>
+    <node x="211.5" y="111.5">Post#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Post.java</node>
     <node x="259.5" y="202.5">Category#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Category.java</node>
     <node x="19.5" y="2.5">Author#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/authors/Author.java</node>
   </nodes>
@@ -19,16 +19,16 @@
       <point x="97.5" y="0.0" />
       <point x="-60.5" y="0.0" />
     </edge>
-    <edge source="Comment#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/comments/Comment.java" target="Post#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Post.java">
-      <point x="0.0" y="-70.5" />
-      <point x="0.0" y="59.5" />
-    </edge>
     <edge source="Author#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/authors/Author.java" target="BasicCredentials#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/authors/BasicCredentials.java">
       <point x="60.5" y="0.0" />
       <point x="-75.0" y="0.0" />
     </edge>
+    <edge source="Comment#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/comments/Comment.java" target="Post#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Post.java">
+      <point x="0.0" y="-70.5" />
+      <point x="0.0" y="59.5" />
+    </edge>
   </edges>
-  <settings layout="Orthogonal" zoom="1.0" x="362.5" y="257.0" />
+  <settings layout="Orthogonal" zoom="1.0" x="399.5" y="272.5" />
   <SelectedNodes>
     <node>Post#file:///Users/mulk/Arbeitskasten/demos/blog/src/main/java/eu/mulk/demos/blog/posts/Post.java</node>
   </SelectedNodes>
