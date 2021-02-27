@@ -99,7 +99,6 @@ public class Author extends PanacheEntity {
 
   @OneToOne(fetch = FetchType.LAZY,        //<1>
             mappedBy = "author")
-  @LazyToOne(LazyToOneOption.NO_PROXY)
   public BasicCredentials basicCredentials;
 }
 ----
