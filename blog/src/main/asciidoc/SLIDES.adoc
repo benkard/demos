@@ -13,15 +13,8 @@ Matthias Andreas Benkard
 :revealjs_theme: simple
 :revealjs_width: 1280
 :revealjs_height: 800
-//:revealjs_width: 1920
-//:revealjs_height: 1200
-//:revealjs_customtheme: SLIDES.css
 :customcss: SLIDES.css
-//:source-highlighter: rouge
 :source-highlighter: highlightjs
-//:highlightjs-theme: https://cdn.jsdelivr.net/npm/reveal.js@3.9.2/lib/css/zenburn.css
-//:highlightjs-theme: https://cdn.jsdelivr.net/npm/reveal.js@3.9.2/lib/css/monokai.css
-//:highlightjs-theme: tomorrow.css
 :highlightjs-theme: grayscale.css
 :stem:
 
@@ -182,9 +175,6 @@ left outer join
     category category3_ 
         on categories2_.categories_id=category3_.id;
 ----
-
-//[.column]
-//[.is-one-third]
 
 [%notitle]
 === Bad Results (1)
@@ -361,60 +351,60 @@ where
 ----
 
 
-[%notitle]
-== Update without `#persist`
-
-[source,java]
-----
-@Transactional
-public void resetCommentStatus() {
-
-  List<Comment> comments = Comment.find(
-      """
-      SELECT c FROM Comment c
-       WHERE c.spamStatus <> 'UNKNOWN'
-      """)
-      .list();
-
-  comments.forEach(c -> c.spamStatus = SpamStatus.UNKNOWN);
-}
-----
-
-
-[%notitle]
-=== Good SQL
-
-[source,sql]
-----
-select
-    comment0_.id,
-    comment0_.author_name,
-    comment0_.post_id,
-    comment0_.publication_date,
-    comment0_.spam_status,
-    comment0_.text
-from
-    comment comment0_
-where
-    comment0_.spam_status<>'UNKNOWN'
-----
-
-[source,sql]
-----
-update
-    comment
-set
-    author_name=?,
-    post_id=?,
-    publication_date=?,
-    spam_status=?,
-    text=?
-where
-    id=?
-
-update
-...
-----
+//[%notitle]
+//== Update without `#persist`
+//
+//[source,java]
+//----
+//@Transactional
+//public void resetCommentStatus() {
+//
+//  List<Comment> comments = Comment.find(
+//      """
+//      SELECT c FROM Comment c
+//       WHERE c.spamStatus <> 'UNKNOWN'
+//      """)
+//      .list();
+//
+//  comments.forEach(c -> c.spamStatus = SpamStatus.UNKNOWN);
+//}
+//----
+//
+//
+//[%notitle]
+//=== Good SQL
+//
+//[source,sql]
+//----
+//select
+//    comment0_.id,
+//    comment0_.author_name,
+//    comment0_.post_id,
+//    comment0_.publication_date,
+//    comment0_.spam_status,
+//    comment0_.text
+//from
+//    comment comment0_
+//where
+//    comment0_.spam_status<>'UNKNOWN'
+//----
+//
+//[source,sql]
+//----
+//update
+//    comment
+//set
+//    author_name=?,
+//    post_id=?,
+//    publication_date=?,
+//    spam_status=?,
+//    text=?
+//where
+//    id=?
+//
+//update
+//...
+//----
 
 
 [%notitle]
