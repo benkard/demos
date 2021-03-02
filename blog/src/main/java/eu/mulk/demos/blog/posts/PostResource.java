@@ -6,6 +6,7 @@ import eu.mulk.demos.blog.comments.SpamAssessmentService;
 import eu.mulk.demos.blog.comments.SpamStatus;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -218,12 +219,38 @@ public class PostResource {
 
   /**
    * Fetches all posts with all the relevant info for an overview included.
+   *
+   * Bad version.
    */
   @GET
   @Transactional
   @Path("/q8")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<PostSummary> overview() {
+  public List<PostSummary> overview1() {
+    clearLog();
+
+    return Post.find(
+        """
+            SELECT p FROM Post p
+              LEFT JOIN FETCH p.author
+              LEFT JOIN FETCH p.comments
+            """)
+        .<Post>stream()
+        .map((Post p) ->
+            new PostSummary(p.author.name, p.title, p.publicationDate, p.comments.size()))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Fetches all posts with all the relevant info for an overview included.
+   *
+   * Good version.
+   */
+  @GET
+  @Transactional
+  @Path("/q9")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<PostSummary> overview2() {
     clearLog();
 
     return entityManager.createQuery(

@@ -16,6 +16,7 @@ Matthias Andreas Benkard
 :customcss: SLIDES.css
 :source-highlighter: highlightjs
 :highlightjs-theme: grayscale.css
+:table-stripes: hover
 :stem:
 
 
@@ -55,36 +56,6 @@ public class Post extends PanacheEntity {
 <1> lazy is good (can always `JOIN FETCH` later)
 <2> `@ManyToMany` always implies a join table
 <3> mapping without a join table, non-owning side
-
-
-[%notitle]
-=== Comments and Categories
-
-[source,java]
-----
-@Entity
-public class Comment extends PanacheEntity {
-
-  public String authorName;
-  public Instant publicationDate;
-  public String text;
-
-  @Enumerated(EnumType.STRING)
-  public SpamStatus spamStatus;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  public Post post;
-}
-----
-
-[source,java]
-----
-@Entity
-public class Category extends PanacheEntity {
-
-  public String name;
-}
-----
 
 
 [%notitle]
@@ -184,8 +155,7 @@ left outer join
 [2021-02-27 10:32:58] 60 rows retrieved
 ----
 
-stem:[60 = ubrace|"posts"|_10 *
-ubrace|("comments")/("post")|_3 * ubrace|"categories"|_2]
+stem:[60 = ubrace|"posts"|_10 * ubrace|("comments")/("post")|_3 * ubrace|"categories"|_2]
 
 Cartesian explosion! 🙀
 
@@ -195,77 +165,28 @@ What gives?
 [%notitle]
 === Bad Results (2)
 
-[%header,format=tsv]
-[.supersmall]
+[%header%autofit.supersmall,format=tsv,stripes=hover]
 |===
-post_id	com_id	cat_id	aut_id	body	pubdate	title	author_name	postid2	com_pubdate	spamp	com_text	postid3	com_id	cat_name	postid4	cat_id
-4	16	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133969	UNKNOWN	First post	4	16	Category #1	4	44
-4	15	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133963	UNKNOWN	First post	4	15	Category #1	4	44
-4	14	44	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133870	UNKNOWN	First post	4	14	Category #1	4	44
-4	16	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133969	UNKNOWN	First post	4	16	Category #0	4	45
-4	15	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133963	UNKNOWN	First post	4	15	Category #0	4	45
-4	14	45	1	""	2021-02-27 10:32:16.129627	Post #0	Anonymous Coward	4	2021-02-27 10:32:16.133870	UNKNOWN	First post	4	14	Category #0	4	45
-5	19	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135200	UNKNOWN	First post	5	19	Category #1	5	44
-5	18	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135192	UNKNOWN	First post	5	18	Category #1	5	44
-5	17	44	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135205	UNKNOWN	First post	5	17	Category #1	5	44
-5	19	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135200	UNKNOWN	First post	5	19	Category #0	5	45
-5	18	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135192	UNKNOWN	First post	5	18	Category #0	5	45
-5	17	45	2	""	2021-02-27 10:32:16.129674	Post #1	Anonymous Coward	5	2021-02-27 10:32:16.135205	UNKNOWN	First post	5	17	Category #0	5	45
-6	22	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136043	UNKNOWN	First post	6	22	Category #1	6	44
-6	21	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136038	UNKNOWN	First post	6	21	Category #1	6	44
-6	20	44	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136031	UNKNOWN	First post	6	20	Category #1	6	44
-6	22	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136043	UNKNOWN	First post	6	22	Category #0	6	45
-6	21	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136038	UNKNOWN	First post	6	21	Category #0	6	45
-6	20	45	3	""	2021-02-27 10:32:16.129700	Post #2	Anonymous Coward	6	2021-02-27 10:32:16.136031	UNKNOWN	First post	6	20	Category #0	6	45
-7	25	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136904	UNKNOWN	First post	7	25	Category #1	7	44
-7	24	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136897	UNKNOWN	First post	7	24	Category #1	7	44
-7	23	44	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136909	UNKNOWN	First post	7	23	Category #1	7	44
-7	25	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136904	UNKNOWN	First post	7	25	Category #0	7	45
-7	24	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136897	UNKNOWN	First post	7	24	Category #0	7	45
-7	23	45	1	""	2021-02-27 10:32:16.129724	Post #3	Anonymous Coward	7	2021-02-27 10:32:16.136909	UNKNOWN	First post	7	23	Category #0	7	45
-8	28	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137743	UNKNOWN	First post	8	28	Category #1	8	44
-8	27	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137739	UNKNOWN	First post	8	27	Category #1	8	44
-8	26	44	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137731	UNKNOWN	First post	8	26	Category #1	8	44
-8	28	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137743	UNKNOWN	First post	8	28	Category #0	8	45
-8	27	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137739	UNKNOWN	First post	8	27	Category #0	8	45
-8	26	45	2	""	2021-02-27 10:32:16.129746	Post #4	Anonymous Coward	8	2021-02-27 10:32:16.137731	UNKNOWN	First post	8	26	Category #0	8	45
-9	31	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138536	UNKNOWN	First post	9	31	Category #1	9	44
-9	30	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138548	UNKNOWN	First post	9	30	Category #1	9	44
-9	29	44	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138543	UNKNOWN	First post	9	29	Category #1	9	44
-9	31	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138536	UNKNOWN	First post	9	31	Category #0	9	45
-9	30	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138548	UNKNOWN	First post	9	30	Category #0	9	45
-9	29	45	3	""	2021-02-27 10:32:16.129767	Post #5	Anonymous Coward	9	2021-02-27 10:32:16.138543	UNKNOWN	First post	9	29	Category #0	9	45
-10	34	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139349	UNKNOWN	First post	10	34	Category #1	10	44
-10	33	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139354	UNKNOWN	First post	10	33	Category #1	10	44
-10	32	44	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139337	UNKNOWN	First post	10	32	Category #1	10	44
-10	34	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139349	UNKNOWN	First post	10	34	Category #0	10	45
-10	33	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139354	UNKNOWN	First post	10	33	Category #0	10	45
-10	32	45	1	""	2021-02-27 10:32:16.129789	Post #6	Anonymous Coward	10	2021-02-27 10:32:16.139337	UNKNOWN	First post	10	32	Category #0	10	45
-11	37	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140032	UNKNOWN	First post	11	37	Category #1	11	44
-11	36	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140025	UNKNOWN	First post	11	36	Category #1	11	44
-11	35	44	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140037	UNKNOWN	First post	11	35	Category #1	11	44
-11	37	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140032	UNKNOWN	First post	11	37	Category #0	11	45
-11	36	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140025	UNKNOWN	First post	11	36	Category #0	11	45
-11	35	45	2	""	2021-02-27 10:32:16.129809	Post #7	Anonymous Coward	11	2021-02-27 10:32:16.140037	UNKNOWN	First post	11	35	Category #0	11	45
-12	40	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140766	UNKNOWN	First post	12	40	Category #1	12	44
-12	39	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140786	UNKNOWN	First post	12	39	Category #1	12	44
-12	38	44	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140779	UNKNOWN	First post	12	38	Category #1	12	44
-12	40	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140766	UNKNOWN	First post	12	40	Category #0	12	45
-12	39	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140786	UNKNOWN	First post	12	39	Category #0	12	45
-12	38	45	3	""	2021-02-27 10:32:16.129839	Post #8	Anonymous Coward	12	2021-02-27 10:32:16.140779	UNKNOWN	First post	12	38	Category #0	12	45
-13	43	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141651	UNKNOWN	First post	13	43	Category #1	13	44
-13	42	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141655	UNKNOWN	First post	13	42	Category #1	13	44
-13	41	44	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141642	UNKNOWN	First post	13	41	Category #1	13	44
-13	43	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141651	UNKNOWN	First post	13	43	Category #0	13	45
-13	42	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141655	UNKNOWN	First post	13	42	Category #0	13	45
-13	41	45	1	""	2021-02-27 10:32:16.129860	Post #9	Anonymous Coward	13	2021-02-27 10:32:16.141642	UNKNOWN	First post	13	41	Category #0	13	45
+post_id	com_id	cat_id	body	title	comment_author	com_pubdate	spamp	com_text	cat_name
+4	16	44	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133969	HAM	First post	Category #1
+4	15	44	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133963	SPAM	First post!	Category #1
+4	14	44	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133870	UNKNOWN	First post!!	Category #1
+4	16	45	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133969	HAM	First post	Category #0
+4	15	45	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133963	SPAM	First post!	Category #0
+4	14	45	"foo"	Post #0	Anonymous Coward	2021-02-27 10:32:16.133870	UNKNOWN	First post!!	Category #0
+5	19	44	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135200	SPAM	Bah	Category #1
+5	18	44	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135192	SPAM	OK	Category #1
+5	17	44	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135205	UNKNOWN	Meh.	Category #1
+5	19	45	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135200	SPAM	Bah	Category #0
+5	18	45	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135192	SPAM	OK	Category #0
+5	17	45	"bar!"	Post #1	Anonymous Coward	2021-02-27 10:32:16.135205	UNKNOWN	Meh.	Category #0
 |===
-
+...
 
 [%notitle]
 === Fix: Sequential Fetch Queries
 
-[source,java]
+[source,java,linenums,highlight="|4-9|11-18|15,17"]
 ----
 @Transactional
 public List<Post> getAllWithCommentsAndCategories2() {
@@ -350,66 +271,10 @@ where
 ----
 
 
-//[%notitle]
-//== Update without `#persist`
-//
-//[source,java]
-//----
-//@Transactional
-//public void resetCommentStatus() {
-//
-//  List<Comment> comments = Comment.find(
-//      """
-//      SELECT c FROM Comment c
-//       WHERE c.spamStatus <> 'UNKNOWN'
-//      """)
-//      .list();
-//
-//  comments.forEach(c -> c.spamStatus = SpamStatus.UNKNOWN);
-//}
-//----
-//
-//
-//[%notitle]
-//=== Good SQL
-//
-//[source,sql]
-//----
-//select
-//    comment0_.id,
-//    comment0_.author_name,
-//    comment0_.post_id,
-//    comment0_.publication_date,
-//    comment0_.spam_status,
-//    comment0_.text
-//from
-//    comment comment0_
-//where
-//    comment0_.spam_status<>'UNKNOWN'
-//----
-//
-//[source,sql]
-//----
-//update
-//    comment
-//set
-//    author_name=?,
-//    post_id=?,
-//    publication_date=?,
-//    spam_status=?,
-//    text=?
-//where
-//    id=?
-//
-//update
-//...
-//----
-
-
 [%notitle]
 == First-Level Caching for the Win
 
-[source,java]
+[source,java,linenums,highlight="|4-9|11-12|14-17"]
 ----
 @Transactional
 public void updateCommentStatus() {
@@ -421,7 +286,8 @@ public void updateCommentStatus() {
       """)
       .list();
 
-  var assessments = spamAssessmentService.assess(comments);   //<2>
+  Map<Long, SpamState> assessments =
+    spamAssessmentService.assess(comments);                   //<2>
 
   for (var assessment : assessments.entrySet()) {
     Comment comment = Comment.findById(assessment.getKey());  //<3>
@@ -541,7 +407,7 @@ where
 [%notitle]
 === Another Look at the Author
 
-[source,java]
+[source,java,linenums,highlight="|6,7"]
 ----
 @Entity
 public class Author extends PanacheEntity {
@@ -550,18 +416,18 @@ public class Author extends PanacheEntity {
 
   @OneToOne(fetch = FetchType.LAZY,
             mappedBy = "author")
-  public BasicCredentials basicCredentials;  //<1>
+  public BasicCredentials basicCredentials;
 }
 ----
 
-[source,java]
+[source,java,linenums,highlight="0"]
 ----
 @Entity
 public class BasicCredentials extends PanacheEntity {
 
   @OneToOne(fetch = FetchType.LAZY)
   @MapsId
-  public Author author;                      //<2>
+  public Author author;
 
   public String username;
   public String password;
@@ -578,7 +444,7 @@ Hibernate has no way of knowing whether `Author#basicCredentials` is `null`!
 [.columns]
 === Fix: `@LazyToOne(NO_PROXY)`
 
-[source,java,data-line-numbers=8]
+[source,java,linenums,highlight="8"]
 [.column]
 [.is-two-thirds]
 ----
@@ -597,6 +463,57 @@ public class Author extends PanacheEntity {
 [.column]
 <1> `NO_PROXY` + bytecode enhancement = profit
 
+
+[%notitle]
+=== Fix: Bytecode Enhancement (Gradle)
+
+[source,groovy,linenums,highlight="5|11"]
+----
+apply plugin: 'org.hibernate.orm'
+
+buildscript {
+    dependencies {
+        classpath "org.hibernate:hibernate-gradle-plugin:$hibernateVersion"
+    }
+}
+
+hibernate {
+    enhance {
+        enableLazyInitialization = true
+        enableDirtyTracking = false
+        enableAssociationManagement = false
+    }
+}
+----
+
+[%notitle]
+=== Fix: Bytecode Enhancement (Maven)
+
+[source,xml,linenums,highlight="3|10"]
+----
+<plugin>
+    <groupId>org.hibernate.orm.tooling</groupId>
+    <artifactId>hibernate-enhance-maven-plugin</artifactId>
+    <version>${hibernate.version}</version>
+
+    <executions>
+        <execution>
+
+            <configuration>
+                <enableLazyInitialization>true</enableLazyInitialization>
+                <enableDirtyTracking>false</enableDirtyTracking>
+                <enableAssociationManagement>false</enableAssociationManagement>
+                <failOnError>true</failOnError>
+            </configuration>
+
+            <goals>
+                <goal>enhance</goal>
+            </goals>
+
+        </execution>
+    </executions>
+</plugin>
+----
 
 [%notitle]
 === Good SQL
@@ -618,8 +535,57 @@ left outer join
         on post0_.author_id=author1_.id
 ----
 
+[%notitle.columns]
+== Projections
+
+[source,java]
+[.column.is-one-half]
+----
+public final class PostSummary {
+
+  public final String authorName;
+  public final String title;
+  public final Instant publicationDate;
+  public final int commentCount;
+
+  public PostSummary(
+      String authorName,
+      String title,
+      Instant pubDate,
+      int commentCount) {
+    this.authorName = authorName;
+    this.title = title;
+    this.publicationDate = pubDate;
+    this.commentCount = commentCount;
+  }
+}
+----
+
+[source,java]
+[.column.is-one-half]
+----
+@Transactional
+public List<PostSummary> overview() {
+
+  return Post.<Post>find(
+      """
+      SELECT p FROM Post p
+        LEFT JOIN FETCH p.author
+        LEFT JOIN FETCH p.comments
+      """)
+      .stream()
+      .map((Post p) ->
+          new PostSummary(
+              p.author.name,
+              p.title,
+              p.publicationDate,
+              p.comments.size()))
+      .collect(Collectors.toList());
+}
+----
+
 [%notitle]
-== Projection Queries
+=== Projection Queries
 
 [source,java]
 ----
@@ -634,32 +600,6 @@ public List<PostSummary> overview() {
       """,
       PostSummary.class)
       .getResultList();
-}
-----
-
-
-[%notitle]
-=== Projection DTOs
-
-[source,java]
-----
-public final class PostSummary {
-
-  public final String authorName;
-  public final String title;
-  public final Instant publicationDate;
-  public final int commentCount;
-
-  public PostSummary(                        //<1>
-      String authorName,
-      String title,
-      Instant publicationDate,
-      int commentCount) {
-    this.authorName = authorName;
-    this.title = title;
-    this.publicationDate = publicationDate;
-    this.commentCount = commentCount;
-  }
 }
 ----
 
@@ -688,12 +628,12 @@ where
 ----
 
 
-[%notitle]
 == Conclusion
 
-- Lazy is good
-- Lazier is better
-- Lazy with bytecode enhancement is best
-- Sequential queries avoid cartesian blowup
-- The 1st-level cache is your friend
-- Use DTO projections everywhere all the time
+[%step]
+* Use a DTO projection if you can.
+* If not:
+[%step]
+** Check your ``@OneToOne``s.  Use `@LazyToOne` and bytecode enhancement if necessary.
+** Don't `LEFT JOIN FETCH` more than one collection at once.  Use sequential queries instead.
+** The 1st-level cache is your friend.  Use it.
