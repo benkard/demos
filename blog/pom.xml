@@ -137,6 +137,15 @@
             </revealjsdir>
           </attributes>
         </configuration>
+        <executions>
+          <execution>
+            <id>asciidoc-to-html</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+          </execution>
+        </executions>
         <dependencies>
           <dependency>
             <groupId>org.asciidoctor</groupId>

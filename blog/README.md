@@ -16,6 +16,18 @@ Or:
 ```
 
 
+## Generating the Slide Show
+
+Generate the slide show by calling the `asciidoctor:process-asciidoc`
+Maven goal:
+
+```shell script
+./mvnw asciidoctor:process-asciidoc
+```
+
+You can find the HTML file at `target/generated-docs/SLIDES.html`.
+
+
 ## Packaging and running the application
 
 The application can be packaged using:
